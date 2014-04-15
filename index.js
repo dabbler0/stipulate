@@ -323,7 +323,7 @@
     __extends(Paren, _super);
 
     function Paren(arr) {
-      this.expr = parse(arr[1]);
+      this.children = [this.expr = parse(arr[1])];
     }
 
     Paren.prototype.render = function() {

@@ -156,7 +156,7 @@ class Var extends Node
 
 class Paren extends Node
   constructor: (arr) ->
-    @expr = parse arr[1]
+    @children = [@expr = parse arr[1]]
 
   render: -> "(#{@expr.render()})"
 
