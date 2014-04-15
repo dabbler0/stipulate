@@ -397,7 +397,7 @@ window.onload = ->
   
   poll = ->
     if changed
-      output.innerText = '''
+      text = '''
         $$
           \\begin{align*}
       '''
@@ -406,11 +406,11 @@ window.onload = ->
         scope = {}
         for line in lines
           if line.trim().length is 0
-            output.innerText += "\n\\\\"
+            text += "\n\\\\"
           else if line[0..1] is '##'
-            output.innerText += "\n\n&\\Large{\\textrm{#{line[2..]}}}\n\n\\\\"
+            text += "\n\n&\\Large{\\textrm{#{line[2..]}}}\n\n\\\\"
           else if line[0] is '#'
-            output.innerText += "\n\n&\\textrm{#{line[1..]}}\n\n\\\\"
+            text += "\n\n&\\textrm{#{line[1..]}}\n\n\\\\"
           else if line[0..4] is 'SOLVE'
             variable = line[5...line.indexOf("|")].trim()
             leftExpression = parse grammar.parse line[line.indexOf('|')+1...line.indexOf('=')].trim()
@@ -420,38 +420,43 @@ window.onload = ->
 
             console.log result, renderNum(result)
 
-            output.innerText += """
+            text += """
               &#{leftExpression.render()} = #{rightExpression.render()}; #{renderVar(variable)} = #{renderNum(result)}\n\\\\
             """
           else
             variable = line[...line.indexOf('=')].trim()
             expression = parse grammar.parse line[line.indexOf('=')+1...].trim()
-            output.innerText += """
+            text += """
               &#{renderVar(variable)}
                 = #{oldRender = expression.render()}
             """
             expression.subsitute scope
             if expression.render() isnt oldRender
-              output.innerText += """
+              text += """
                 =#{oldRender = expression.subsitute(scope);expression.render()}
               """
             if renderNum(expression.compute(scope)) isnt oldRender
-              output.innerText += """
+              text += """
                 =#{renderNum(expression.compute(scope))}
               """
 
-            output.innerText += '\n\\\\'
+            text += '\n\\\\'
 
             scope[variable] = expression.compute scope
 
-        output.innerText += '''
+        text += '''
             \\end{align*}
           $$
         '''
+      
+        output.innerText = output.textContent = text
+
         MathJax.Hub.Queue ["Typeset", MathJax.Hub]
       catch e
-        output.innerText = e.stack
-    
+        text = e.stack
+
+        output.innerText = output.textContent = text
+
     changed = false
     setTimeout poll, 2000
 

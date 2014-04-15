@@ -631,47 +631,49 @@
       return changed = true;
     });
     poll = function() {
-      var e, expression, leftExpression, line, lines, oldRender, result, rightExpression, scope, variable, _i, _len;
+      var e, expression, leftExpression, line, lines, oldRender, result, rightExpression, scope, text, variable, _i, _len;
       if (changed) {
-        output.innerText = '$$\n  \\begin{align*}';
+        text = '$$\n  \\begin{align*}';
         try {
           lines = input.value.split('\n');
           scope = {};
           for (_i = 0, _len = lines.length; _i < _len; _i++) {
             line = lines[_i];
             if (line.trim().length === 0) {
-              output.innerText += "\n\\\\";
+              text += "\n\\\\";
             } else if (line.slice(0, 2) === '##') {
-              output.innerText += "\n\n&\\Large{\\textrm{" + line.slice(2) + "}}\n\n\\\\";
+              text += "\n\n&\\Large{\\textrm{" + line.slice(2) + "}}\n\n\\\\";
             } else if (line[0] === '#') {
-              output.innerText += "\n\n&\\textrm{" + line.slice(1) + "}\n\n\\\\";
+              text += "\n\n&\\textrm{" + line.slice(1) + "}\n\n\\\\";
             } else if (line.slice(0, 5) === 'SOLVE') {
               variable = line.slice(5, line.indexOf("|")).trim();
               leftExpression = parse(grammar.parse(line.slice(line.indexOf('|') + 1, line.indexOf('=')).trim()));
               rightExpression = parse(grammar.parse(line.slice(line.indexOf('=') + 1).trim()));
               result = solveSecantMethod(scope, leftExpression, rightExpression, variable);
               console.log(result, renderNum(result));
-              output.innerText += "&" + (leftExpression.render()) + " = " + (rightExpression.render()) + "; " + (renderVar(variable)) + " = " + (renderNum(result)) + "\n\\\\";
+              text += "&" + (leftExpression.render()) + " = " + (rightExpression.render()) + "; " + (renderVar(variable)) + " = " + (renderNum(result)) + "\n\\\\";
             } else {
               variable = line.slice(0, line.indexOf('=')).trim();
               expression = parse(grammar.parse(line.slice(line.indexOf('=') + 1).trim()));
-              output.innerText += "&" + (renderVar(variable)) + "\n  = " + (oldRender = expression.render());
+              text += "&" + (renderVar(variable)) + "\n  = " + (oldRender = expression.render());
               expression.subsitute(scope);
               if (expression.render() !== oldRender) {
-                output.innerText += "=" + (oldRender = expression.subsitute(scope), expression.render());
+                text += "=" + (oldRender = expression.subsitute(scope), expression.render());
               }
               if (renderNum(expression.compute(scope)) !== oldRender) {
-                output.innerText += "=" + (renderNum(expression.compute(scope)));
+                text += "=" + (renderNum(expression.compute(scope)));
               }
-              output.innerText += '\n\\\\';
+              text += '\n\\\\';
               scope[variable] = expression.compute(scope);
             }
           }
-          output.innerText += '  \\end{align*}\n$$';
+          text += '  \\end{align*}\n$$';
+          output.innerText = output.textContent = text;
           MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
         } catch (_error) {
           e = _error;
-          output.innerText = e.stack;
+          text = e.stack;
+          output.innerText = output.textContent = text;
         }
       }
       changed = false;
