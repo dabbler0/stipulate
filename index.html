@@ -1,0 +1,68 @@
+<html>
+<head>
+  <script type="text/javascript"
+    src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script>
+  <style>
+    #input {
+      position: absolute; top: 0; left: 0; bottom: 0;
+      width: 50%; height: 100%;
+    }
+    #output {
+      position: absolute; top: 0; right: 0; bottom: 0;
+      overflow: auto;
+      width: 50%; height: 100%;
+    }
+  </style>
+  <script src="grammar.js"></script>
+  <script src="chemical.js"></script>
+  <script src="index.js"></script>
+</head>
+<body>
+<textarea id="input">
+## Buffers
+
+#Suppose we are studying acid/base equilibria. We have in a buffer solution:
+
+A = 0.1
+HA = 0.1
+K_a = 1.6e-4
+
+# Stipulate can solve this equation for us, at least approximately:
+
+SOLVE H | (H + A) * H / (HA - H) = K_a
+
+# And then we can get pH:
+
+pH = -log(H)
+
+## Percent Ionization
+
+# Or, suppose we were given that we had 4% ionization for 0.1 mol in 100 mL of water:
+
+percent_ionization = 0.04
+HA = 0.1
+V = 0.1
+
+# And we need to find Ka.
+
+H = percent_ionization * HA
+HA_f = HA - H
+K_a = H^2/HA_f
+
+## Molar Mass
+
+# What if we only knew that we threw 4g of sodium chloride into 100 L of water? What's the concentration?
+
+m = 4
+v = 0.1
+
+# No problem, Stipulate can look molar mass up for us:
+
+n = m / mm:{NaC2H3O2}
+M = n / v
+</textarea>
+<div id="output">
+</div>
+</body>
+</html>
