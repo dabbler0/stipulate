@@ -28,7 +28,7 @@ class Div extends BinOp
     "\\frac{#{@left.render()}}{#{@right.render()}}"
 
   compute: (scope) ->
-    @left.compute(scope) / @right.compute(scope)
+    @left.compute(scope).div @right.compute(scope)
 
 class Mul extends BinOp
   constructor: -> super
@@ -37,7 +37,7 @@ class Mul extends BinOp
     "#{@left.render()}\\cdot #{@right.render()}"
 
   compute: (scope) ->
-    @left.compute(scope) * @right.compute(scope)
+    @left.compute(scope).mul @right.compute(scope)
 
 class Add extends BinOp
   constructor: -> super
@@ -46,7 +46,7 @@ class Add extends BinOp
     "#{@left.render()}+#{@right.render()}"
 
   compute: (scope) ->
-    @left.compute(scope) + @right.compute(scope)
+    @left.compute(scope).add @right.compute(scope)
 
 class Sub extends BinOp
   constructor: -> super
@@ -55,7 +55,7 @@ class Sub extends BinOp
     "#{@left.render()}-#{@right.render()}"
 
   compute: (scope) ->
-    @left.compute(scope) - @right.compute(scope)
+    @left.compute(scope).sub @right.compute(scope)
 
 class Exp extends BinOp
   constructor: -> super
@@ -64,7 +64,7 @@ class Exp extends BinOp
     "#{@left.render()}^{#{@right.render()}}"
 
   compute: (scope) ->
-    @left.compute(scope) ** @right.compute(scope)
+    @left.compute(scope).exp @right.compute(scope)
 
 class Lok extends BinOp
   constructor: (arr) ->
@@ -75,7 +75,7 @@ class Lok extends BinOp
     @val = null
 
   render: ->
-    if @val? then renderNum @val else "#{@fname}_{#{@arg.render()}}"
+    if @val? then renderNum @val else "#{renderVar(@fname)}_{#{@arg.render()}}"
 
   compute: (scope) -> nativeFunctions[@fname] scope, @arg
 
@@ -91,8 +91,11 @@ class Call extends Lok
 
 class Chem extends Node
   constructor: (val) ->
-    val = val[1..-2]
-    @val = chemical.parse val
+    @str = val = val[1..-2]
+
+    try
+      {chem:@val, state:@state} = chemical.parse val
+
     @children = []
 
   _renderArr: (array) ->
@@ -110,7 +113,7 @@ class Chem extends Node
           str += element[0]
     return str
 
-  render: -> @_renderArr @val
+  render: -> @_renderArr(@val) + (@state ? '')
 
   compute: ->
     throw new Error 'Cannot compute value of a chemical.'
@@ -123,7 +126,7 @@ class Neg extends Node
     "-#{@val.render()}"
 
   compute: (scope) ->
-    -@val.compute scope
+    @val.compute(scope).mul new UnitNum -1, {}
 
 renderVar = (name) ->
   str = ''
@@ -140,6 +143,7 @@ renderVar = (name) ->
   if str[0] is 'd' then "\\Delta #{str[1..]}"
   else str
 
+
 class Var extends Node
   constructor: (@name) ->
     @val = null
@@ -148,7 +152,15 @@ class Var extends Node
     if @val? then renderNum @val
     else renderVar @name
   
-  compute: (scope) -> scope[@name]
+  compute: (scope) ->
+    if @name of scope then scope[@name]
+    else
+      if @name of unitConversions
+        return unitConversions[@name]
+      else
+        unit = {}
+        unit[@name] = 1
+        new UnitNum 1, unit
 
   subsitute: (scope) -> @val = scope[@name]
 
@@ -180,18 +192,82 @@ noplus = (str) ->
   else return str
 
 renderNum = (num) ->
-  str = num.toExponential()
+  str = num.val.toExponential()
   if Math.abs(Number(str[str.indexOf('e')+1...])) > 3
-    return "#{maxLen(str[...str.indexOf('e')], 4)}\\cdot 10^{#{noplus(str[str.indexOf('e')+1...])}}"
+    return "#{maxLen(str[...str.indexOf('e')], 4)}\\cdot 10^{#{noplus(str[str.indexOf('e')+1...])}}" + num.renderUnits()
   else
-    return maxLen num.toString(), 4
+    return maxLen(num.val.toString(), 4) + num.renderUnits()
+
+class UnitNum
+  constructor: (@val, @units) ->
+
+  add: (other) -> new UnitNum other.val + @val, @units
+  sub: (other) -> new UnitNum @val - other.val, @units
+  mul: (other) ->
+    unitsDict = {}
+    
+    for unit of @units
+      unitsDict[unit] = @units[unit]
+
+    for unit of other.units
+      unitsDict[unit] ?= 0
+      unitsDict[unit] += other.units[unit]
+    
+    return new UnitNum other.val * @val, unitsDict
+  
+  div: (other) ->
+    unitsDict = {}
+    
+    for unit of @units
+      unitsDict[unit] = @units[unit]
+
+    for unit of other.units
+      unitsDict[unit] ?= 0
+      unitsDict[unit] -= other.units[unit]
+    
+    return new UnitNum @val / other.val, unitsDict
+  
+  exp: (other) ->
+    if Object.keys(other.units).length is 0
+      unitsDict = {}
+      for unit of @units
+        unitsDict[unit] = @units[unit] * other.val
+
+      return new UnitNum @val ** other.val, unitsDict
+    else
+      return new UnitNum @val ** other.val, {}
+
+  renderUnits: ->
+    top = []
+    bottom = []
+    for unit, p of @units
+      if p is 1
+        top.push unit
+      else if p is -1
+        bottom.push unit
+      else if p > 0
+        top.push "#{unit}^#{p}"
+      else if p < 0
+        bottom.push "#{unit}^#{-p}"
+    
+    if bottom.length > 0
+      if top.length > 0
+        return "\\frac{#{top.join(' ')}}{#{bottom.join(' ')}}"
+      else return "\\frac{1}{#{bottom.join(' ')}}"
+    else if top.length > 0
+      return top.join ' '
+    else return ''
+
+unitConversions =
+  'M': new UnitNum 1, {mol: 1, L: -1}
+  'torr': new UnitNum 1/760, {atm: 1}
 
 class Num extends Node
   constructor: (@val) -> super
 
-  render: -> renderNum @val
+  render: -> renderNum new UnitNum @val, {}
   
-  compute: -> @val
+  compute: -> new UnitNum @val, {}
 
 window.parse = (arr) ->
   if typeof arr is 'number' or arr instanceof Number
@@ -339,10 +415,10 @@ mm_arr = (array) ->
   return total
 
 nativeFunctions =
-  'mm': (scope, chem) -> mm_arr chem.val
-  'log': (scope, arg) -> Math.log(arg.compute(scope)) / Math.log(10)
-  'ln': (scope, arg) -> Math.log(arg.compute(scope))
-  'sqrt': (scope, arg) -> Math.sqrt(arg.compute(scope))
+  'mm': (scope, chem) -> new UnitNum mm_arr(chem.val), {"g": 1, "mol": -1}
+  'log': (scope, arg) -> new UnitNum (Math.log(arg.compute(scope).val) / Math.log(10)), {}
+  'ln': (scope, arg) -> new UnitNum Math.log(arg.compute(scope).val), {}
+  'sqrt': (scope, arg) -> arg.compute(scope).exp 0.5
 
 ###
 # MathJax
@@ -358,21 +434,22 @@ intersectZero = (x1, y1, x2, y2) ->
 solveSecantMethod = (scope, left, right, variable) ->
   count = 0
   solved = false
-  until solved and scope[variable] > 0 or count > 1000
-    x1 = scope[variable] = Math.random()
+  scope[variable] = new UnitNum 0, {}
+  until solved and scope[variable].val > 0 or count > 1000
+    x1 = scope[variable].val = Math.random()
     x2 = Math.random()
     until count > 1000
-      scope[variable] = x1
-      y1 = left.compute(scope) - right.compute(scope)
+      scope[variable].val = x1
+      y1 = left.compute(scope).val - right.compute(scope).val
 
-      scope[variable] = x2
-      y2 = left.compute(scope) - right.compute(scope)
+      scope[variable].val = x2
+      y2 = left.compute(scope).val - right.compute(scope).val
 
       newX = intersectZero(x1, y1, x2, y2)
       
       x1 = x2
 
-      if (Math.abs(newX - x1) < 0.01 * scope[variable] and Math.abs(left.compute(scope) - right.compute(scope)) < .001) or scope[variable] isnt scope[variable]
+      if (Math.abs(newX - x1) < 0.01 * scope[variable].val and Math.abs(left.compute(scope).val - right.compute(scope).val) < .001) or scope[variable].val isnt scope[variable].val
         break
 
       x2 = newX
@@ -382,10 +459,18 @@ solveSecantMethod = (scope, left, right, variable) ->
     count += 1
     solved = true
 
-  console.log scope[variable], count
-
   return scope[variable]
 
+unitConversions =
+  'M': new UnitNum 1, {mol: 1, L: -1}
+  'kJ': new UnitNum 1000, {J: 1}
+  'mL': new UnitNum .001, {L: 1}
+
+$.ajax
+  url: 'hf.json'
+  dataType: 'json'
+  success: (data) ->
+    nativeFunctions['dHf'] = (scope, chem) -> new UnitNum data[chem.str] * 1000, {J: 1}
 ###
 # UI
 ###
@@ -420,8 +505,6 @@ window.onload = ->
             rightExpression = parse grammar.parse line[line.indexOf('=')+1...].trim()
 
             result = solveSecantMethod scope, leftExpression, rightExpression, variable
-
-            console.log result, renderNum(result)
 
             text += """
               &#{leftExpression.render()} = #{rightExpression.render()}; #{renderVar(variable)} = #{renderNum(result)}\n\\\\
@@ -464,3 +547,52 @@ window.onload = ->
     setTimeout poll, 2000
 
   poll()
+
+  window.getLatex = ->
+    text = '''
+      \\documentclass{article}
+      \\begin{document}
+    '''
+    try
+      lines = input.value.split '\n'
+      scope = {}
+      for line in lines
+        if line.trim().length is 0
+          text += "\n"
+        else if line[0..1] is '##'
+          text += "\n\n\\Large{\\textrm{#{line[2..]}}}\n\n"
+        else if line[0] is '#'
+          text += "\n\n\\textrm{#{line[1..]}}\n\n"
+        else if line[0..4] is 'SOLVE'
+          variable = line[5...line.indexOf("|")].trim()
+          leftExpression = parse grammar.parse line[line.indexOf('|')+1...line.indexOf('=')].trim()
+          rightExpression = parse grammar.parse line[line.indexOf('=')+1...].trim()
+
+          result = solveSecantMethod scope, leftExpression, rightExpression, variable
+
+          text += """
+            $$#{leftExpression.render()} = #{rightExpression.render()}; #{renderVar(variable)} = #{renderNum(result)}$$\n
+          """
+        else
+          variable = line[...line.indexOf('=')].trim()
+          expression = parse grammar.parse line[line.indexOf('=')+1...].trim()
+          text += """
+            $$#{renderVar(variable)} = #{oldRender = expression.render()}
+          """
+          expression.subsitute scope
+          if expression.render() isnt oldRender
+            text += """
+              =#{oldRender = expression.subsitute(scope);expression.render()}
+            """
+          if renderNum(expression.compute(scope)) isnt oldRender
+            text += """
+              =#{renderNum(expression.compute(scope))}
+            """
+
+          text += '$$\n'
+
+          scope[variable] = expression.compute scope
+
+      text += '''
+          \\end{document}
+      '''

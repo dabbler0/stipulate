@@ -4,7 +4,7 @@
  */
 
 (function() {
-  var Add, BinOp, Call, Chem, Div, Exp, Lok, Mul, Neg, Node, Num, Paren, Sub, Var, atomMasses, intersectZero, maxLen, mm_arr, nativeFunctions, noplus, renderNum, renderVar, solveSecantMethod,
+  var Add, BinOp, Call, Chem, Div, Exp, Lok, Mul, Neg, Node, Num, Paren, Sub, UnitNum, Var, atomMasses, intersectZero, maxLen, mm_arr, nativeFunctions, noplus, renderNum, renderVar, solveSecantMethod, unitConversions,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -64,7 +64,7 @@
     };
 
     Div.prototype.compute = function(scope) {
-      return this.left.compute(scope) / this.right.compute(scope);
+      return this.left.compute(scope).div(this.right.compute(scope));
     };
 
     return Div;
@@ -83,7 +83,7 @@
     };
 
     Mul.prototype.compute = function(scope) {
-      return this.left.compute(scope) * this.right.compute(scope);
+      return this.left.compute(scope).mul(this.right.compute(scope));
     };
 
     return Mul;
@@ -102,7 +102,7 @@
     };
 
     Add.prototype.compute = function(scope) {
-      return this.left.compute(scope) + this.right.compute(scope);
+      return this.left.compute(scope).add(this.right.compute(scope));
     };
 
     return Add;
@@ -121,7 +121,7 @@
     };
 
     Sub.prototype.compute = function(scope) {
-      return this.left.compute(scope) - this.right.compute(scope);
+      return this.left.compute(scope).sub(this.right.compute(scope));
     };
 
     return Sub;
@@ -140,7 +140,7 @@
     };
 
     Exp.prototype.compute = function(scope) {
-      return Math.pow(this.left.compute(scope), this.right.compute(scope));
+      return this.left.compute(scope).exp(this.right.compute(scope));
     };
 
     return Exp;
@@ -160,7 +160,7 @@
       if (this.val != null) {
         return renderNum(this.val);
       } else {
-        return "" + this.fname + "_{" + (this.arg.render()) + "}";
+        return "" + (renderVar(this.fname)) + "_{" + (this.arg.render()) + "}";
       }
     };
 
@@ -204,8 +204,11 @@
     __extends(Chem, _super);
 
     function Chem(val) {
-      val = val.slice(1, -1);
-      this.val = chemical.parse(val);
+      var _ref;
+      this.str = val = val.slice(1, -1);
+      try {
+        _ref = chemical.parse(val), this.val = _ref.chem, this.state = _ref.state;
+      } catch (_error) {}
       this.children = [];
     }
 
@@ -232,7 +235,8 @@
     };
 
     Chem.prototype.render = function() {
-      return this._renderArr(this.val);
+      var _ref;
+      return this._renderArr(this.val) + ((_ref = this.state) != null ? _ref : '');
     };
 
     Chem.prototype.compute = function() {
@@ -255,7 +259,7 @@
     };
 
     Neg.prototype.compute = function(scope) {
-      return -this.val.compute(scope);
+      return this.val.compute(scope).mul(new UnitNum(-1, {}));
     };
 
     return Neg;
@@ -304,7 +308,18 @@
     };
 
     Var.prototype.compute = function(scope) {
-      return scope[this.name];
+      var unit;
+      if (this.name in scope) {
+        return scope[this.name];
+      } else {
+        if (this.name in unitConversions) {
+          return unitConversions[this.name];
+        } else {
+          unit = {};
+          unit[this.name] = 1;
+          return new UnitNum(1, unit);
+        }
+      }
     };
 
     Var.prototype.subsitute = function(scope) {
@@ -367,12 +382,113 @@
 
   renderNum = function(num) {
     var str;
-    str = num.toExponential();
+    str = num.val.toExponential();
     if (Math.abs(Number(str.slice(str.indexOf('e') + 1))) > 3) {
-      return "" + (maxLen(str.slice(0, str.indexOf('e')), 4)) + "\\cdot 10^{" + (noplus(str.slice(str.indexOf('e') + 1))) + "}";
+      return ("" + (maxLen(str.slice(0, str.indexOf('e')), 4)) + "\\cdot 10^{" + (noplus(str.slice(str.indexOf('e') + 1))) + "}") + num.renderUnits();
     } else {
-      return maxLen(num.toString(), 4);
+      return maxLen(num.val.toString(), 4) + num.renderUnits();
     }
+  };
+
+  UnitNum = (function() {
+    function UnitNum(val, units) {
+      this.val = val;
+      this.units = units;
+    }
+
+    UnitNum.prototype.add = function(other) {
+      return new UnitNum(other.val + this.val, this.units);
+    };
+
+    UnitNum.prototype.sub = function(other) {
+      return new UnitNum(this.val - other.val, this.units);
+    };
+
+    UnitNum.prototype.mul = function(other) {
+      var unit, unitsDict;
+      unitsDict = {};
+      for (unit in this.units) {
+        unitsDict[unit] = this.units[unit];
+      }
+      for (unit in other.units) {
+        if (unitsDict[unit] == null) {
+          unitsDict[unit] = 0;
+        }
+        unitsDict[unit] += other.units[unit];
+      }
+      return new UnitNum(other.val * this.val, unitsDict);
+    };
+
+    UnitNum.prototype.div = function(other) {
+      var unit, unitsDict;
+      unitsDict = {};
+      for (unit in this.units) {
+        unitsDict[unit] = this.units[unit];
+      }
+      for (unit in other.units) {
+        if (unitsDict[unit] == null) {
+          unitsDict[unit] = 0;
+        }
+        unitsDict[unit] -= other.units[unit];
+      }
+      return new UnitNum(this.val / other.val, unitsDict);
+    };
+
+    UnitNum.prototype.exp = function(other) {
+      var unit, unitsDict;
+      if (Object.keys(other.units).length === 0) {
+        unitsDict = {};
+        for (unit in this.units) {
+          unitsDict[unit] = this.units[unit] * other.val;
+        }
+        return new UnitNum(Math.pow(this.val, other.val), unitsDict);
+      } else {
+        return new UnitNum(Math.pow(this.val, other.val), {});
+      }
+    };
+
+    UnitNum.prototype.renderUnits = function() {
+      var bottom, p, top, unit, _ref;
+      top = [];
+      bottom = [];
+      _ref = this.units;
+      for (unit in _ref) {
+        p = _ref[unit];
+        if (p === 1) {
+          top.push(unit);
+        } else if (p === -1) {
+          bottom.push(unit);
+        } else if (p > 0) {
+          top.push("" + unit + "^" + p);
+        } else if (p < 0) {
+          bottom.push("" + unit + "^" + (-p));
+        }
+      }
+      if (bottom.length > 0) {
+        if (top.length > 0) {
+          return "\\frac{" + (top.join(' ')) + "}{" + (bottom.join(' ')) + "}";
+        } else {
+          return "\\frac{1}{" + (bottom.join(' ')) + "}";
+        }
+      } else if (top.length > 0) {
+        return top.join(' ');
+      } else {
+        return '';
+      }
+    };
+
+    return UnitNum;
+
+  })();
+
+  unitConversions = {
+    'M': new UnitNum(1, {
+      mol: 1,
+      L: -1
+    }),
+    'torr': new UnitNum(1 / 760, {
+      atm: 1
+    })
   };
 
   Num = (function(_super) {
@@ -384,11 +500,11 @@
     }
 
     Num.prototype.render = function() {
-      return renderNum(this.val);
+      return renderNum(new UnitNum(this.val, {}));
     };
 
     Num.prototype.compute = function() {
-      return this.val;
+      return new UnitNum(this.val, {});
     };
 
     return Num;
@@ -564,16 +680,19 @@
 
   nativeFunctions = {
     'mm': function(scope, chem) {
-      return mm_arr(chem.val);
+      return new UnitNum(mm_arr(chem.val), {
+        "g": 1,
+        "mol": -1
+      });
     },
     'log': function(scope, arg) {
-      return Math.log(arg.compute(scope)) / Math.log(10);
+      return new UnitNum(Math.log(arg.compute(scope).val) / Math.log(10), {});
     },
     'ln': function(scope, arg) {
-      return Math.log(arg.compute(scope));
+      return new UnitNum(Math.log(arg.compute(scope).val), {});
     },
     'sqrt': function(scope, arg) {
-      return Math.sqrt(arg.compute(scope));
+      return arg.compute(scope).exp(0.5);
     }
   };
 
@@ -594,17 +713,18 @@
     var count, newX, solved, x1, x2, y1, y2;
     count = 0;
     solved = false;
-    while (!(solved && scope[variable] > 0 || count > 1000)) {
-      x1 = scope[variable] = Math.random();
+    scope[variable] = new UnitNum(0, {});
+    while (!(solved && scope[variable].val > 0 || count > 1000)) {
+      x1 = scope[variable].val = Math.random();
       x2 = Math.random();
       while (!(count > 1000)) {
-        scope[variable] = x1;
-        y1 = left.compute(scope) - right.compute(scope);
-        scope[variable] = x2;
-        y2 = left.compute(scope) - right.compute(scope);
+        scope[variable].val = x1;
+        y1 = left.compute(scope).val - right.compute(scope).val;
+        scope[variable].val = x2;
+        y2 = left.compute(scope).val - right.compute(scope).val;
         newX = intersectZero(x1, y1, x2, y2);
         x1 = x2;
-        if ((Math.abs(newX - x1) < 0.01 * scope[variable] && Math.abs(left.compute(scope) - right.compute(scope)) < .001) || scope[variable] !== scope[variable]) {
+        if ((Math.abs(newX - x1) < 0.01 * scope[variable].val && Math.abs(left.compute(scope).val - right.compute(scope).val) < .001) || scope[variable].val !== scope[variable].val) {
           break;
         }
         x2 = newX;
@@ -613,9 +733,33 @@
       count += 1;
       solved = true;
     }
-    console.log(scope[variable], count);
     return scope[variable];
   };
+
+  unitConversions = {
+    'M': new UnitNum(1, {
+      mol: 1,
+      L: -1
+    }),
+    'kJ': new UnitNum(1000, {
+      J: 1
+    }),
+    'mL': new UnitNum(.001, {
+      L: 1
+    })
+  };
+
+  $.ajax({
+    url: 'hf.json',
+    dataType: 'json',
+    success: function(data) {
+      return nativeFunctions['dHf'] = function(scope, chem) {
+        return new UnitNum(data[chem.str] * 1000, {
+          J: 1
+        });
+      };
+    }
+  });
 
 
   /*
@@ -650,7 +794,6 @@
               leftExpression = parse(grammar.parse(line.slice(line.indexOf('|') + 1, line.indexOf('=')).trim()));
               rightExpression = parse(grammar.parse(line.slice(line.indexOf('=') + 1).trim()));
               result = solveSecantMethod(scope, leftExpression, rightExpression, variable);
-              console.log(result, renderNum(result));
               text += "&" + (leftExpression.render()) + " = " + (rightExpression.render()) + "; " + (renderVar(variable)) + " = " + (renderNum(result)) + "\n\\\\";
             } else {
               variable = line.slice(0, line.indexOf('=')).trim();
@@ -679,7 +822,45 @@
       changed = false;
       return setTimeout(poll, 2000);
     };
-    return poll();
+    poll();
+    return window.getLatex = function() {
+      var expression, leftExpression, line, lines, oldRender, result, rightExpression, scope, text, variable, _i, _len;
+      text = '\\documentclass{article}\n\\begin{document}';
+      try {
+        lines = input.value.split('\n');
+        scope = {};
+        for (_i = 0, _len = lines.length; _i < _len; _i++) {
+          line = lines[_i];
+          if (line.trim().length === 0) {
+            text += "\n";
+          } else if (line.slice(0, 2) === '##') {
+            text += "\n\n\\Large{\\textrm{" + line.slice(2) + "}}\n\n";
+          } else if (line[0] === '#') {
+            text += "\n\n\\textrm{" + line.slice(1) + "}\n\n";
+          } else if (line.slice(0, 5) === 'SOLVE') {
+            variable = line.slice(5, line.indexOf("|")).trim();
+            leftExpression = parse(grammar.parse(line.slice(line.indexOf('|') + 1, line.indexOf('=')).trim()));
+            rightExpression = parse(grammar.parse(line.slice(line.indexOf('=') + 1).trim()));
+            result = solveSecantMethod(scope, leftExpression, rightExpression, variable);
+            text += "$$" + (leftExpression.render()) + " = " + (rightExpression.render()) + "; " + (renderVar(variable)) + " = " + (renderNum(result)) + "$$\n";
+          } else {
+            variable = line.slice(0, line.indexOf('=')).trim();
+            expression = parse(grammar.parse(line.slice(line.indexOf('=') + 1).trim()));
+            text += "$$" + (renderVar(variable)) + " = " + (oldRender = expression.render());
+            expression.subsitute(scope);
+            if (expression.render() !== oldRender) {
+              text += "=" + (oldRender = expression.subsitute(scope), expression.render());
+            }
+            if (renderNum(expression.compute(scope)) !== oldRender) {
+              text += "=" + (renderNum(expression.compute(scope)));
+            }
+            text += '$$\n';
+            scope[variable] = expression.compute(scope);
+          }
+        }
+        return text += '\\end{document}';
+      } catch (_error) {}
+    };
   };
 
 }).call(this);

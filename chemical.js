@@ -74,30 +74,32 @@
 var chemical = (function(){
 var parser = {trace: function trace() { },
 yy: {},
-symbols_: {"error":2,"expressions":3,"e":4,"EOF":5,"a":6,"COUNT":7,"ATOM":8,"(":9,")":10,"$accept":0,"$end":1},
-terminals_: {2:"error",5:"EOF",7:"COUNT",8:"ATOM",9:"(",10:")"},
-productions_: [0,[3,2],[4,3],[4,2],[4,0],[6,1],[6,3]],
+symbols_: {"error":2,"expressions":3,"e":4,"EOF":5,"STATE":6,"a":7,"COUNT":8,"ATOM":9,"(":10,")":11,"$accept":0,"$end":1},
+terminals_: {2:"error",5:"EOF",6:"STATE",8:"COUNT",9:"ATOM",10:"(",11:")"},
+productions_: [0,[3,2],[3,2],[4,3],[4,2],[4,0],[7,1],[7,3]],
 performAction: function anonymous(yytext, yyleng, yylineno, yy, yystate /* action[1] */, $$ /* vstack */, _$ /* lstack */) {
 /* this == yyval */
 
 var $0 = $$.length - 1;
 switch (yystate) {
-case 1:return $$[$0-1];
+case 1:return {chem: $$[$0-1], state:null};
 break;
-case 2:this.$ = [[$$[$0-2], $$[$0-1]]].concat($$[$0]);
+case 2:return {chem:$$[$0-1], state:$$[$0]};
 break;
-case 3:this.$ = [[$$[$0-1], 1]].concat($$[$0]);
+case 3:this.$ = [[$$[$0-2], $$[$0-1]]].concat($$[$0]);
 break;
-case 4:this.$ = []
+case 4:this.$ = [[$$[$0-1], 1]].concat($$[$0]);
 break;
-case 5:this.$ = yytext;
+case 5:this.$ = []
 break;
-case 6:this.$ = $$[$0-1]
+case 6:this.$ = yytext;
+break;
+case 7:this.$ = $$[$0-1]
 break;
 }
 },
-table: [{3:1,4:2,5:[2,4],6:3,8:[1,4],9:[1,5]},{1:[3]},{5:[1,6]},{4:8,5:[2,4],6:3,7:[1,7],8:[1,4],9:[1,5],10:[2,4]},{5:[2,5],7:[2,5],8:[2,5],9:[2,5],10:[2,5]},{4:9,6:3,8:[1,4],9:[1,5],10:[2,4]},{1:[2,1]},{4:10,5:[2,4],6:3,8:[1,4],9:[1,5],10:[2,4]},{5:[2,3],10:[2,3]},{10:[1,11]},{5:[2,2],10:[2,2]},{5:[2,6],7:[2,6],8:[2,6],9:[2,6],10:[2,6]}],
-defaultActions: {6:[2,1]},
+table: [{3:1,4:2,5:[2,5],6:[2,5],7:3,9:[1,4],10:[1,5]},{1:[3]},{5:[1,6],6:[1,7]},{4:9,5:[2,5],6:[2,5],7:3,8:[1,8],9:[1,4],10:[1,5],11:[2,5]},{5:[2,6],6:[2,6],8:[2,6],9:[2,6],10:[2,6],11:[2,6]},{4:10,7:3,9:[1,4],10:[1,5],11:[2,5]},{1:[2,1]},{1:[2,2]},{4:11,5:[2,5],6:[2,5],7:3,9:[1,4],10:[1,5],11:[2,5]},{5:[2,4],6:[2,4],11:[2,4]},{11:[1,12]},{5:[2,3],6:[2,3],11:[2,3]},{5:[2,7],6:[2,7],8:[2,7],9:[2,7],10:[2,7],11:[2,7]}],
+defaultActions: {6:[2,1],7:[2,2]},
 parseError: function parseError(str, hash) {
     if (hash.recoverable) {
         this.trace(str);
@@ -563,20 +565,22 @@ performAction: function anonymous(yy,yy_,$avoiding_name_collisions,YY_START) {
 
 var YYSTATE=YY_START;
 switch($avoiding_name_collisions) {
-case 0:return 7
+case 0:return 8
 break;
-case 1:return 8
+case 1:return 9
 break;
-case 2:return 9
+case 2:return 6
 break;
 case 3:return 10
 break;
-case 4:return 5
+case 4:return 11
+break;
+case 5:return 5
 break;
 }
 },
-rules: [/^(?:[0-9]+)/,/^(?:[A-Z][a-z]*)/,/^(?:\()/,/^(?:\))/,/^(?:$)/],
-conditions: {"INITIAL":{"rules":[0,1,2,3,4],"inclusive":true}}
+rules: [/^(?:[0-9]+)/,/^(?:[A-Z][a-z]*)/,/^(?:\([a-z]+\))/,/^(?:\()/,/^(?:\))/,/^(?:$)/],
+conditions: {"INITIAL":{"rules":[0,1,2,3,4,5],"inclusive":true}}
 };
 return lexer;
 })();
