@@ -5,10 +5,10 @@
 %%
 
 \s+                   /* skip whitespace */
-"{"[^}]*"}"           return 'STRING'
-[0-9]+("."[0-9]+)?("e""-"?[0-9]+)? return 'NUMBER'
+"\""[^}]*"\""           return 'STRING'
+[0-9]+("."[0-9]*)?("e""-"?[0-9]+)? return 'NUMBER'
 "solve"               return 'SOLVE'
-\w+                   return 'VARIABLE'
+[\w\\]+               return 'VARIABLE'
 "*"                   return '*'
 "/"                   return '/'
 "-"                   return '-'
@@ -41,14 +41,25 @@
 expressions
     : e EOF
         {return $1;}
+
+    | SOLVE '(' u ')' VARIABLE ':' e '=' e EOF
+        {return ['SOLVE', $5, -1e10, 1e10, $4, $6, $3];}
+    | SOLVE '(' u ')' NUMBER '<' VARIABLE '<' NUMBER ':' e '=' e EOF
+        {return ['SOLVE', $7, $5, $9, $11, $13, $3];}
+    | SOLVE '(' u ')' VARIABLE '<' NUMBER ':' e '=' e EOF
+        {return ['SOLVE', $5, -1e10, $7, $9, $11, $3];}
+    | SOLVE '(' u ')' NUMBER '<' VARIABLE ':' e '=' e EOF
+        {return ['SOLVE', $7, $5, 1e10, $9, $11, $3];}
+    
     | SOLVE VARIABLE ':' e '=' e EOF
-        {return ['SOLVE', $2, -1e10, 1e10, $4, $6];}
+        {return ['SOLVE', $2, -1e10, 1e10, $4, $6, null];}
     | SOLVE NUMBER '<' VARIABLE '<' NUMBER ':' e '=' e EOF
-        {return ['SOLVE', $4, $2, $6, $8, $10];}
+        {return ['SOLVE', $4, $2, $6, $8, $10, null];}
     | SOLVE VARIABLE '<' NUMBER ':' e '=' e EOF
-        {return ['SOLVE', $2, -1e10, $4, $6, $8];}
+        {return ['SOLVE', $2, -1e10, $4, $6, $8, null];}
     | SOLVE NUMBER '<' VARIABLE ':' e '=' e EOF
-        {return ['SOLVE', $4, $2, 1e10, $6, $8];}
+        {return ['SOLVE', $4, $2, 1e10, $6, $8, null];}
+    
     | VARIABLE '=' e EOF
         {return ['ASSIGN', $1, $3]}
     ;
@@ -71,13 +82,13 @@ e
     | VARIABLE '(' e ')'
         {$$ = ["CALL", $1, $3];}
     | NUMBER u %prec UNIT
-        {$$ = ["UNIT", Number($1), $2];}
+        {$$ = ["UNIT", $1, $2];}
     | STRING
-        {$$ = yytext;}
+        {$$ = ["STRING", yytext];}
     | VARIABLE
         {$$ = ["VARIABLE", yytext];}
     | NUMBER
-        {$$ = ["UNIT", Number(yytext), [null, null]];}
+        {$$ = ["UNIT", yytext, [null, null]];}
     ;
 
 u   

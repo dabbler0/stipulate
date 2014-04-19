@@ -6,6 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "depenencies": {
+    "marked": "latest"
+  },
   "devDependencies": {
     "grunt": "latest",
     "grunt-contrib-coffee": "latest",
@@ -13,5 +16,8 @@
   },
   "repository": "",
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "marked": "~0.3.2"
+  }
 }

@@ -8,6 +8,7 @@ module.exports = (grunt) ->
       build:
         files:
           'index.js': ['index.coffee']
+          'web.js': ['web.coffee']
 
   grunt.loadNpmTasks 'grunt-contrib-coffee'
 
