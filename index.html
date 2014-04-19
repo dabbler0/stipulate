@@ -29,7 +29,50 @@
 </style>
 </head>
 <body>
-<div id="input"></div>
+<div id="input">Stipulate
+========
+
+Stipulate is your calculator and your typesetter at the same time! Moreover, it's a calculator geared towards chemistry,
+with functions like "find molar mass". Here's an example, with an acid/base buffer.
+    X = 0.7 M
+    HX = 0.5 M
+    K_a = 1.8e-5 M
+
+Solve for [H+] at equilibrium:
+    solve (M) 0 < H < 0.5 : (H + X) * H / (HX - H) = K_a
+
+Get pH:
+    pH = -log(H)
+
+Of course, we could have used Henderson-Hasselbach:
+    pK_a = -log(K_a)
+    pH = pK_a + log(X/HX)
+
+So, we see that Henderson-Hasselbach is a reasonable assumption for this buffer. I didn't end up showing you specific
+chemistry functions, so here's another problem with creating a 0.5 M solution of sodium acetate:
+    n = 0.5 M * 100 mL
+    m = mm("NaC2H3O2") * n
+
+A Couple Details
+================
+ - Paragraphs like these are passed through **Markdown**.
+ - The syntax for "solve" is:
+```
+solve [(UNIT)] [LOWER_BOUND <] VARIABLE_NAME [< UPPER_BOUND] : EQUATION
+```
+For the curious, this uses [Brent's approximation](http://en.wikipedia.org/wiki/Root-finding_algorithm#Brent.27s_method).
+ - Units have higher precedence than math, so `2 mol / blah` is read as "two moles per blah" as if "blah" were a unit.
+Instead, use `(2 mol) / blah`.
+
+Credits
+=======
+ - Stipulate is by [Anthony Bau](http://dabbler.github.io/hack-per-day)
+ - [Marked](https://github.com/chjj/marked) is used as a Markdown compiler
+ - [MathJax](http://mathjax.org) is used to display math
+ - This text editor is [ACE Editor](http://ace.c9.io)
+ - Brent's approximation implemented by [borgar](https://gist.github.com/borgar/3317728)
+ - [numeric.js](http://numericjs.com) is used to solve linear systems
+</div>
 <div id="output"></div>
 <script src="bower_components/jquery/dist/jquery.min.js"></script>
 <script src="bower_components/marked/lib/marked.js"></script>
