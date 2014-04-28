@@ -61,15 +61,19 @@ define ['./brent-rjs', './text!./units.json', './text!./atoms.json'], (brent, da
 
   exports.UnitNum = class UnitNum
     constructor: (@num, @unit, @sigFigs = Infinity) ->
+
+    getLastDigit_: ->
+      if @num then -@sigFigs
+      else Math.floor(Math.log(Math.abs(@num))/Math.log(10)) - @sigFigs
     
     add: (other) ->
       unless objEquals @unit, other.unit
         throw new Error 'Cannot add two numbers of different units'
       
-      lastDigit = Math.floor(Math.log(@num)/Math.log(10)) - @sigFigs
-      otherLastDigit = Math.floor(Math.log(other.num)/Math.log(10)) - other.sigFigs
+      lastDigit = @getLastDigit_()
+      otherLastDigit = other.getLastDigit_()
 
-      resultFirstDigit = Math.floor Math.log(@num + other.num)/Math.log(10)
+      resultFirstDigit = Math.floor Math.log(Math.abs(@num + other.num))/Math.log(10)
       
       return new UnitNum(@num + other.num, @unit, resultFirstDigit - Math.max(lastDigit, otherLastDigit))
     
@@ -77,10 +81,10 @@ define ['./brent-rjs', './text!./units.json', './text!./atoms.json'], (brent, da
       unless objEquals @unit, other.unit
         throw new Error 'Cannot subtract two numbers of different units'
       
-      lastDigit = Math.floor(Math.log(@num)/Math.log(10)) - @sigFigs
-      otherLastDigit = Math.floor(Math.log(other.num)/Math.log(10)) - other.sigFigs
+      lastDigit = @getLastDigit_()
+      otherLastDigit = other.getLastDigit_()
 
-      resultFirstDigit = Math.floor Math.log(@num - other.num)/Math.log(10)
+      resultFirstDigit = Math.floor Math.log(Math.abs(@num - other.num))/Math.log(10)
       
       return new UnitNum(@num - other.num, @unit, resultFirstDigit - Math.max(lastDigit, otherLastDigit))
     
@@ -228,14 +232,17 @@ define ['./brent-rjs', './text!./units.json', './text!./atoms.json'], (brent, da
 
     renderSubbed: (scope, usingUnits) -> @render(usingUnits)
 
-  renderVar = (name) -> name.replace /\\d/g, '\\Delta '
+  renderVar = (name) ->
+    brackets = name.split('_').length - 1
+    name.replace(/\\d/g, '\\Delta ').replace(/_/g, '_{') + ('}' for [0...brackets]).join ''
 
   class VarExpression extends Expression
     constructor: (array) ->
       @name = array[1]
 
     compute: (scope, usingUnits) ->
-      if @name of scope then scope[@name]
+      if @name is 'e' then new UnitNum Math.E, UNITLESS, 4
+      else if @name of scope then scope[@name]
       else if @name of units then new UnitNum 1, units[@name].units
       else
         throw new Error "Cannot find variable #{@name}"
@@ -243,7 +250,8 @@ define ['./brent-rjs', './text!./units.json', './text!./atoms.json'], (brent, da
     render: (usingUnits) -> renderVar @name
 
     renderSubbed: (scope, usingUnits) ->
-      if @name of scope then scope[@name].express usingUnits
+      if @name is 'e' then 'e'
+      else if @name of scope then scope[@name].express usingUnits
       else if @name of units then @name
       else
         throw new Error "Cannot find variable #{@name}"
@@ -380,7 +388,7 @@ define ['./brent-rjs', './text!./units.json', './text!./atoms.json'], (brent, da
           unitMultiplier = parsedUnit.number
           unit = parsedUnit.units
         else
-          unitNultiplier = 1
+          unitMultiplier = 1
           unit = UNITLESS
         
         brent.brent ((x) =>

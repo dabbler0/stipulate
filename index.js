@@ -6,7 +6,7 @@
     iomatch = false;
     stipulate = function(text) {
       var ctx, line, lines, resultLines, _i, _len;
-      ctx = new executor.ExecutionContext(['g', 'L', 'kJ', 'mol', 'A', 'K']);
+      ctx = new executor.ExecutionContext(['atm', 'g', 'kJ', 'mol', 'V', 'K']);
       lines = text.split('\n');
       resultLines = [];
       for (_i = 0, _len = lines.length; _i < _len; _i++) {
@@ -40,6 +40,14 @@
         return iomatch = true;
       }
     };
+    $('#print').click(function() {
+      var printWindow;
+      printWindow = window.open('print.html');
+      return printWindow.addEventListener('load', function() {
+        printWindow.document.getElementById('output').innerHTML = marked(stipulate(input.getValue()));
+        return printWindow.MathJax.Hub.Queue(['Typeset', MathJax.Hub, 'output']);
+      });
+    });
     reparse();
     return input.on('change', function() {
       return iomatch = false;

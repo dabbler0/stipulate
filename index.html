@@ -7,18 +7,45 @@
 }
 
 #input, #output {
-  position: absolute; top: 0; bottom: 0;
+  position: absolute; top: 30px; bottom: 0;
+}
+#toolbar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 30px;
+  background-color: #000;
+  color: #FFF;
+  font-family: sans-serif;
+  font-size: 20px;
+  padding-left: 5px;
+}
+#toolbar button {
+  height: 30px;
+  line-height: 30px;
+  border: none;
+  background-color: #000;
+  color: #FFF;
+  cursor: pointer;
+  font-size: inherit;
+  border-left: 1px solid #FFF;
+  outline: none;
+}
+#toolbar button:hover {
+  background-color: #FFF;
+  color: #000;
 }
 #input {
-  left: 0; border-right: 1px solid #000;
+  left: 0;
   width: 50%;
 }
 #output {
+  border-left: 1px solid #000;
   font-family: "Computer Modern Roman", serif;
   overflow: auto;
   padding: 5px;
   left: 50%;
   right: 0;
+  background-color: #FFF;
 }
 #output h1, #output h2 {
   font-weight: normal;
@@ -74,10 +101,19 @@ Credits
  - [numeric.js](http://numericjs.com) is used to solve linear systems
 </div>
 <div id="output"></div>
+<div id="toolbar">
+  <span class="toolbar-label">Stipulate</span>
+  <button id="print">Print</button>
+</div>
 <script src="bower_components/jquery/dist/jquery.min.js"></script>
 <script src="bower_components/marked/lib/marked.js"></script>
 <script src="bower_components/requirejs/require.js"></script>
 <script src="ace/ace.js"></script>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {extensions: ["mhchem.js"]}
+});
+</script>
 <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"> </script>
 <script src="parsers/grammar.js"></script>
 <script src="parsers/chemical.js"></script>

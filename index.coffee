@@ -5,7 +5,7 @@ require ['./web'], (executor) ->
   iomatch = false
 
   stipulate = (text) ->
-    ctx = new executor.ExecutionContext ['g', 'L', 'kJ', 'mol', 'A', 'K']
+    ctx = new executor.ExecutionContext ['atm', 'g', 'kJ', 'mol', 'V', 'K']
 
     lines = text.split '\n'
     resultLines = []
@@ -34,6 +34,12 @@ require ['./web'], (executor) ->
         setTimeout reparse, 1000
 
       iomatch = true
+  
+  $('#print').click ->
+    printWindow = window.open 'print.html'
+    printWindow.addEventListener 'load', ->
+      printWindow.document.getElementById('output').innerHTML = marked stipulate input.getValue()
+      printWindow.MathJax.Hub.Queue ['Typeset', MathJax.Hub, 'output']
 
   reparse()
 

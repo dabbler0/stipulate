@@ -100,14 +100,22 @@
         this.sigFigs = sigFigs != null ? sigFigs : Infinity;
       }
 
+      UnitNum.prototype.getLastDigit_ = function() {
+        if (this.num) {
+          return -this.sigFigs;
+        } else {
+          return Math.floor(Math.log(Math.abs(this.num)) / Math.log(10)) - this.sigFigs;
+        }
+      };
+
       UnitNum.prototype.add = function(other) {
         var lastDigit, otherLastDigit, resultFirstDigit;
         if (!objEquals(this.unit, other.unit)) {
           throw new Error('Cannot add two numbers of different units');
         }
-        lastDigit = Math.floor(Math.log(this.num) / Math.log(10)) - this.sigFigs;
-        otherLastDigit = Math.floor(Math.log(other.num) / Math.log(10)) - other.sigFigs;
-        resultFirstDigit = Math.floor(Math.log(this.num + other.num) / Math.log(10));
+        lastDigit = this.getLastDigit_();
+        otherLastDigit = other.getLastDigit_();
+        resultFirstDigit = Math.floor(Math.log(Math.abs(this.num + other.num)) / Math.log(10));
         return new UnitNum(this.num + other.num, this.unit, resultFirstDigit - Math.max(lastDigit, otherLastDigit));
       };
 
@@ -116,9 +124,9 @@
         if (!objEquals(this.unit, other.unit)) {
           throw new Error('Cannot subtract two numbers of different units');
         }
-        lastDigit = Math.floor(Math.log(this.num) / Math.log(10)) - this.sigFigs;
-        otherLastDigit = Math.floor(Math.log(other.num) / Math.log(10)) - other.sigFigs;
-        resultFirstDigit = Math.floor(Math.log(this.num - other.num) / Math.log(10));
+        lastDigit = this.getLastDigit_();
+        otherLastDigit = other.getLastDigit_();
+        resultFirstDigit = Math.floor(Math.log(Math.abs(this.num - other.num)) / Math.log(10));
         return new UnitNum(this.num - other.num, this.unit, resultFirstDigit - Math.max(lastDigit, otherLastDigit));
       };
 
@@ -367,7 +375,16 @@
 
     })(Expression);
     renderVar = function(name) {
-      return name.replace(/\\d/g, '\\Delta ');
+      var brackets;
+      brackets = name.split('_').length - 1;
+      return name.replace(/\\d/g, '\\Delta ').replace(/_/g, '_{') + ((function() {
+        var _j, _results;
+        _results = [];
+        for (_j = 0; 0 <= brackets ? _j < brackets : _j > brackets; 0 <= brackets ? _j++ : _j--) {
+          _results.push('}');
+        }
+        return _results;
+      })()).join('');
     };
     VarExpression = (function(_super) {
       __extends(VarExpression, _super);
@@ -377,7 +394,9 @@
       }
 
       VarExpression.prototype.compute = function(scope, usingUnits) {
-        if (this.name in scope) {
+        if (this.name === 'e') {
+          return new UnitNum(Math.E, UNITLESS, 4);
+        } else if (this.name in scope) {
           return scope[this.name];
         } else if (this.name in units) {
           return new UnitNum(1, units[this.name].units);
@@ -391,7 +410,9 @@
       };
 
       VarExpression.prototype.renderSubbed = function(scope, usingUnits) {
-        if (this.name in scope) {
+        if (this.name === 'e') {
+          return 'e';
+        } else if (this.name in scope) {
           return scope[this.name].express(usingUnits);
         } else if (this.name in units) {
           return this.name;
@@ -592,7 +613,7 @@
       };
 
       ExecutionContext.prototype.execute = function(line) {
-        var last_, left, parsed, parsedUnit, right, rstr, testNumber, unit, unitMultiplier, unitNultiplier;
+        var last_, left, parsed, parsedUnit, right, rstr, testNumber, unit, unitMultiplier;
         parsed = grammar.parse(line);
         rstr = '';
         if (parsed[0] === 'ASSIGN') {
@@ -617,7 +638,7 @@
             unitMultiplier = parsedUnit.number;
             unit = parsedUnit.units;
           } else {
-            unitNultiplier = 1;
+            unitMultiplier = 1;
             unit = UNITLESS;
           }
           brent.brent(((function(_this) {
