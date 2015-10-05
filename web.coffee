@@ -358,7 +358,7 @@ define ['./brent-rjs', './text!./units.json', './text!./atoms.json'], (brent, da
     constructor: (usingUnits = ['kg', 'm', 's', 'mol', 'A', 'K'], @scope = {}) ->
       @usingUnits = (units[key] for key in usingUnits)
 
-    setUnits: (units) ->
+    setUnits: (usingUnits) ->
       @usingUnits = (units[key] for key in usingUnits)
 
     execute: (line) ->
