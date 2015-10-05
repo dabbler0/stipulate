@@ -13,8 +13,7 @@
         line = lines[_i];
         if (line.slice(0, 6) === '\\UNITS') {
           ctx.setUnits(line.slice(5).split(' '));
-        }
-        if (line.slice(0, 2) === '  ') {
+        } else if (line.slice(0, 2) === '  ') {
           resultLines.push('$$' + ctx.execute(line.trimLeft()).replace(/_/g, '\\_') + '$$');
         } else {
           resultLines.push(line);
