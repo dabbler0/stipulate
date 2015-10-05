@@ -12,7 +12,7 @@
       for (_i = 0, _len = lines.length; _i < _len; _i++) {
         line = lines[_i];
         if (line.slice(0, 6) === '\\UNITS') {
-          ctx.setUnits(line.slice(5).split(' '));
+          ctx.setUnits(line.slice(7).split(' '));
         } else if (line.slice(0, 2) === '  ') {
           resultLines.push('$$' + ctx.execute(line.trimLeft()).replace(/_/g, '\\_') + '$$');
         } else {
