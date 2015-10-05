@@ -11,7 +11,7 @@
       resultLines = [];
       for (_i = 0, _len = lines.length; _i < _len; _i++) {
         line = lines[_i];
-        if (line.slice(0, 6) === '#UNITS') {
+        if (line.slice(0, 6) === '\\UNITS') {
           ctx.setUnits(line.slice(5).split(' '));
         }
         if (line.slice(0, 2) === '  ') {
