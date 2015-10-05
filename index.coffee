@@ -12,7 +12,7 @@ require ['./web'], (executor) ->
 
     for line in lines
       if line[0..5] is '\\UNITS'
-        ctx.setUnits line[5...].split(' ')
+        ctx.setUnits line[7..].split(' ')
       else if line[0..1] is '  '
         resultLines.push '$$' + ctx.execute(line.trimLeft()).replace(/_/g, '\\_') + '$$'
       else
