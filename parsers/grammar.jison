@@ -50,7 +50,7 @@ expressions
         {return ['SOLVE', $5, -1e10, $7, $9, $11, $3];}
     | SOLVE '(' u ')' NUMBER '<' VARIABLE ':' e '=' e EOF
         {return ['SOLVE', $7, $5, 1e10, $9, $11, $3];}
-    
+
     | SOLVE VARIABLE ':' e '=' e EOF
         {return ['SOLVE', $2, -1e10, 1e10, $4, $6, null];}
     | SOLVE NUMBER '<' VARIABLE '<' NUMBER ':' e '=' e EOF
@@ -59,7 +59,10 @@ expressions
         {return ['SOLVE', $2, -1e10, $4, $6, $8, null];}
     | SOLVE NUMBER '<' VARIABLE ':' e '=' e EOF
         {return ['SOLVE', $4, $2, 1e10, $6, $8, null];}
-    
+
+    | SET_UNITS UNIT*
+        {return ['SET_UNITS', $1]}
+
     | VARIABLE '=' e EOF
         {return ['ASSIGN', $1, $3]}
     ;

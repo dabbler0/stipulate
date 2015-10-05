@@ -11,6 +11,8 @@ require ['./web'], (executor) ->
     resultLines = []
 
     for line in lines
+      if line[0..5] is '#UNITS'
+        ctx.setUnits line[5...].split(' ')
       if line[0..1] is '  '
         resultLines.push '$$' + ctx.execute(line.trimLeft()).replace(/_/g, '\\_') + '$$'
       else
@@ -34,7 +36,7 @@ require ['./web'], (executor) ->
         setTimeout reparse, 1000
 
       iomatch = true
-  
+
   $('#print').click ->
     printWindow = window.open 'print.html'
     printWindow.addEventListener 'load', ->

@@ -366,6 +366,7 @@ define ['./brent-rjs', './text!./units.json', './text!./atoms.json'], (brent, da
 
       rstr = ''
 
+      # TODO USE_UNITS
       if parsed[0] is 'ASSIGN'
         testNumber = Expression.fromArray parsed[2]
         last_ = ''
